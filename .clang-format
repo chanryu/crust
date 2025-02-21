@@ -1,0 +1,31 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+AccessModifierOffset: -2
+AlwaysBreakTemplateDeclarations: true
+
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLambdasOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: false
+  AfterStruct: false
+  AfterFunction: false
+  AfterNamespace: false
+  BeforeCatch: true
+  BeforeElse: true
+  SplitEmptyRecord: false
+  SplitEmptyFunction: true
+
+ColumnLimit: 120
+IndentCaseLabels: false
+IndentWidth: 2
+PointerAlignment: Left
+SpaceInEmptyParentheses: false
+UseTab: Never
+
+...
