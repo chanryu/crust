@@ -1,2 +1,3 @@
 # rscpp
-Like Rust but in C++
+
+Rust Goodies I missed in C++.
