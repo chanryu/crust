@@ -88,19 +88,19 @@ public:
   }
 
   void lock(auto&& func) {
-    std::forward<decltype(func)>(func)(*lock());
+    auto guard = lock();
+    std::forward<decltype(func)>(func)(*guard);
   }
 
-  [[nodiscard]] auto lock_shared() const -> detail::SharedLockGuard<Mutex, Data>
-    requires detail::SharedLockable<Mutex>
-  {
+  template <detail::SharedLockable M = Mutex>
+  [[nodiscard]] auto lock_shared() const -> detail::SharedLockGuard<M, Data> {
     return {mutex_, data_};
   }
 
-  void lock_shared(auto&& func) const
-    requires detail::SharedLockable<Mutex>
-  {
-    std::forward<decltype(func)>(func)(*lock_shared());
+  template <detail::SharedLockable M = Mutex>
+  void lock_shared(auto&& func) const {
+    auto guard = lock_shared();
+    std::forward<decltype(func)>(func)(*guard);
   }
 
 private:
