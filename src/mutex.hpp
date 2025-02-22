@@ -70,7 +70,7 @@ private:
 } // namespace detail
 
 // BasicMutex implementation
-template <detail::Lockable Mutex, typename Data>
+template <typename Data, detail::Lockable Mutex>
 class BasicMutex {
 public:
   explicit BasicMutex(Data&& data) : data_{std::move(data)} {
@@ -110,12 +110,12 @@ private:
 
 // Type aliases
 template <typename Data>
-using Mutex = BasicMutex<std::mutex, Data>;
+using Mutex = BasicMutex<Data, std::mutex>;
 
 template <typename Data>
-using RecursiveMutex = BasicMutex<std::recursive_mutex, Data>;
+using RecursiveMutex = BasicMutex<Data, std::recursive_mutex>;
 
 template <typename Data>
-using SharedMutex = BasicMutex<std::shared_mutex, Data>;
+using SharedMutex = BasicMutex<Data, std::shared_mutex>;
 
 } // namespace rscpp
