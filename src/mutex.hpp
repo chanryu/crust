@@ -21,22 +21,21 @@ concept SharedLockable = requires(Mutex m) {
   m.unlock_shared();
 };
 
+// Exclusive Lock Guard
 template <Lockable Mutex, typename Data>
 class LockGuard final {
 public:
   LockGuard(Mutex& mutex, Data& data) : mutex_{mutex}, data_{data} {
     mutex_.lock();
   }
-
   ~LockGuard() {
     mutex_.unlock();
   }
 
-  Data* operator->() {
+  auto operator->() -> Data* {
     return &data_;
   }
-
-  Data& operator*() {
+  auto operator*() -> Data& {
     return data_;
   }
 
@@ -45,43 +44,44 @@ private:
   Data& data_;
 };
 
+// Shared Lock Guard
 template <SharedLockable Mutex, typename Data>
 class SharedLockGuard final {
 public:
-  SharedLockGuard(Mutex& mutex, const Data& data) : mutex_{mutex}, data_{data} {
+  SharedLockGuard(Mutex& mutex, Data const& data) : mutex_{mutex}, data_{data} {
     mutex_.lock_shared();
   }
-
   ~SharedLockGuard() {
     mutex_.unlock_shared();
   }
 
-  const Data* operator->() const {
+  auto operator->() const -> Data const* {
     return &data_;
   }
-
-  const Data& operator*() const {
+  auto operator*() const -> Data const& {
     return data_;
   }
 
 private:
   Mutex& mutex_;
-  const Data& data_;
+  Data const& data_;
 };
 
 } // namespace detail
 
+// BasicMutex implementation
 template <detail::Lockable Mutex, typename Data>
 class BasicMutex {
 public:
   explicit BasicMutex(Data&& data) : data_{std::move(data)} {
   }
-  explicit BasicMutex(const Data& data) : data_{data} {
+
+  explicit BasicMutex(Data const& data) : data_{data} {
   }
 
   // Non-copyable and non-movable
-  BasicMutex(const BasicMutex&) = delete;
-  BasicMutex& operator=(const BasicMutex&) = delete;
+  BasicMutex(BasicMutex const&) = delete;
+  BasicMutex& operator=(BasicMutex const&) = delete;
 
   [[nodiscard]] auto lock() -> detail::LockGuard<Mutex, Data> {
     return {mutex_, data_};
