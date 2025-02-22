@@ -7,21 +7,21 @@ namespace rscpp {
 
 namespace detail {
 
-// Concept to check if a Mutex has shared locking capabilities
+// Concept to check if a Mutex has exclusive locking capabilities
 template <typename Mutex>
 concept Lockable = requires(Mutex m) {
-  { m.lock() };
-  { m.unlock() };
+  m.lock();
+  m.unlock();
 };
 
+// Concept to check if a Mutex has shared locking capabilities
 template <typename Mutex>
 concept SharedLockable = requires(Mutex m) {
-  { m.lock_shared() };
-  { m.unlock_shared() };
+  m.lock_shared();
+  m.unlock_shared();
 };
 
-template <typename Mutex, typename Data>
-  requires detail::Lockable<Mutex>
+template <Lockable Mutex, typename Data>
 class LockGuard final {
 public:
   LockGuard(Mutex& mutex, Data& data) : mutex_{mutex}, data_{data} {
@@ -35,6 +35,7 @@ public:
   Data* operator->() {
     return &data_;
   }
+
   Data& operator*() {
     return data_;
   }
@@ -44,8 +45,7 @@ private:
   Data& data_;
 };
 
-template <typename Mutex, typename Data>
-  requires detail::SharedLockable<Mutex>
+template <SharedLockable Mutex, typename Data>
 class SharedLockGuard final {
 public:
   SharedLockGuard(Mutex& mutex, const Data& data) : mutex_{mutex}, data_{data} {
@@ -59,6 +59,7 @@ public:
   const Data* operator->() const {
     return &data_;
   }
+
   const Data& operator*() const {
     return data_;
   }
@@ -70,13 +71,11 @@ private:
 
 } // namespace detail
 
-template <typename Mutex, typename Data>
-  requires detail::Lockable<Mutex>
+template <detail::Lockable Mutex, typename Data>
 class BasicMutex {
 public:
   explicit BasicMutex(Data&& data) : data_{std::move(data)} {
   }
-
   explicit BasicMutex(const Data& data) : data_{data} {
   }
 
@@ -84,25 +83,24 @@ public:
   BasicMutex(const BasicMutex&) = delete;
   BasicMutex& operator=(const BasicMutex&) = delete;
 
-  auto lock() {
-    return detail::LockGuard<Mutex, Data>{mutex_, data_};
+  [[nodiscard]] auto lock() -> detail::LockGuard<Mutex, Data> {
+    return {mutex_, data_};
   }
 
-  template <typename Func>
-  void lock(Func&& func) {
-    std::forward<Func>(func)(*lock());
+  void lock(auto&& func) {
+    std::forward<decltype(func)>(func)(*lock());
   }
 
-  auto lock_shared() const
+  [[nodiscard]] auto lock_shared() const -> detail::SharedLockGuard<Mutex, Data>
     requires detail::SharedLockable<Mutex>
   {
-    return detail::SharedLockGuard<Mutex, Data>{mutex_, data_};
+    return {mutex_, data_};
   }
 
-  template <typename Func>
+  void lock_shared(auto&& func) const
     requires detail::SharedLockable<Mutex>
-  void lock_shared(Func&& func) const {
-    std::forward<Func>(func)(*lock_shared());
+  {
+    std::forward<decltype(func)>(func)(*lock_shared());
   }
 
 private:
