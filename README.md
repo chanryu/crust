@@ -21,6 +21,7 @@ constexpr int num_threads = 10;
 std::vector<std::thread> threads;
 
 for (int i = 0; i < num_threads; ++i) {
+
     threads.emplace_back([&]() {
         auto data = counter.lock();
         *data += 1;
