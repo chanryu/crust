@@ -23,7 +23,7 @@ std::vector<std::thread> threads;
 for (int i = 0; i < num_threads; ++i) {
     threads.emplace_back([&]() {
         auto data = counter.lock();
-        ++(*data);
+        *data += 1;
     });
 }
 
@@ -44,11 +44,10 @@ let mut handles = vec![];
 
 for _ in 0..num_threads {
     let counter = Arc::clone(&counter);
-    let handle = thread::spawn(move || {
-        let mut value = counter.lock().unwrap();
-        *value += 1;
-    });
-    handles.push(handle);
+    handles.push(thread::spawn(move || {
+        let mut data = counter.lock().unwrap();
+        *data += 1;
+    }));
 }
 
 for handle in handles {
