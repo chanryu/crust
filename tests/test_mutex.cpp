@@ -1,8 +1,12 @@
-#include <gtest/gtest.h>
+#include <chrono>
 #include <thread>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "mutex.hpp"
+
+using namespace std::chrono_literals;
 
 namespace crust {
 namespace {
@@ -12,11 +16,8 @@ TEST(MutexTest, ExclusiveLock) {
   mutex.lock([](int& data) {
     data = 100;
   });
-  int value = 0;
-  mutex.lock([&value](int& data) {
-    value = data;
-  });
-  EXPECT_EQ(value, 100);
+  auto value = mutex.lock();
+  EXPECT_EQ(*value, 100);
 }
 
 TEST(MutexTest, MultiThreadedExclusiveLock) {
@@ -24,7 +25,7 @@ TEST(MutexTest, MultiThreadedExclusiveLock) {
   std::vector<std::thread> threads;
   for (int i = 0; i < 10; ++i) {
     threads.emplace_back([&]() {
-      mutex.lock([](int& data) {
+      mutex.lock([](auto& data) {
         ++data;
       });
     });
@@ -32,11 +33,9 @@ TEST(MutexTest, MultiThreadedExclusiveLock) {
   for (auto& thread : threads) {
     thread.join();
   }
-  int value = 0;
-  mutex.lock([&value](int& data) {
-    value = data;
-  });
-  EXPECT_EQ(value, 10);
+
+  auto value = mutex.lock();
+  EXPECT_EQ(*value, 10);
 }
 
 TEST(SharedMutexTest, SharedLock) {
@@ -49,39 +48,31 @@ TEST(SharedMutexTest, SharedLock) {
 }
 
 TEST(SharedMutexTest, MultiThreadedSharedLock) {
-  SharedMutex<int> mutex{42};
+  SharedMutex<std::pair<int, int>> mutex{{0, 0}};
   std::vector<std::thread> threads;
-  std::vector<int> results(10, 0);
+
+  // producer - update first and second with 10ms interval
+  threads.emplace_back([&]() {
+    mutex.lock([](auto& pair) {
+      for (int i = 0; i < 10; ++i) {
+        pair.first += 1;
+        std::this_thread::sleep_for(10ms);
+        pair.second = pair.first;
+      }
+    });
+  });
+
+  // consumers - read first and second with 2ms interval
   for (int i = 0; i < 10; ++i) {
-    threads.emplace_back([&, i]() {
-      mutex.lock_shared([&](const int& data) {
-        results[i] = data;
+    threads.emplace_back([&]() {
+      mutex.lock_shared([](const auto& pair) {
+        EXPECT_EQ(pair.first, pair.second);
+        std::this_thread::sleep_for(2ms);
       });
     });
   }
   for (auto& thread : threads) {
     thread.join();
-  }
-  for (const auto& result : results) {
-    EXPECT_EQ(result, 42);
-  }
-}
-
-TEST(MutexTest, LockGuard) {
-  Mutex<int> mutex{42};
-  {
-    auto guard = mutex.lock();
-    *guard = 100;
-  }
-  auto guard = mutex.lock();
-  EXPECT_EQ(*guard, 100);
-}
-
-TEST(SharedMutexTest, SharedLockGuard) {
-  SharedMutex<int> mutex{42};
-  {
-    auto guard = mutex.lock_shared();
-    EXPECT_EQ(*guard, 42);
   }
 }
 
