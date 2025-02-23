@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
-project(rscpp)
+project(crust)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_library(rscpp INTERFACE)
-target_include_directories(rscpp INTERFACE src/)
+add_library(crust INTERFACE)
+target_include_directories(crust INTERFACE src/)
 
 enable_testing()
 
@@ -22,6 +22,6 @@ FetchContent_MakeAvailable(googletest)
 # Define test executable
 file(GLOB TEST_SOURCES "tests/*.cpp")
 add_executable(tests ${TEST_SOURCES})
-target_link_libraries(tests gtest gtest_main rscpp)
+target_link_libraries(tests gtest gtest_main crust)
 
 add_test(NAME tests COMMAND tests)

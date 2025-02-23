@@ -3,28 +3,27 @@
 #include <mutex>
 #include <shared_mutex>
 
-namespace rscpp {
+namespace crust {
 
-namespace detail {
-
-// Concept to check if a Mutex has shared locking capabilities
-template <typename Mutex>
-concept Lockable = requires(Mutex m) {
-  { m.lock() };
-  { m.unlock() };
+// Concept to check if a M has exclusive locking capabilities
+template <typename M>
+concept Lockable = requires(M m) {
+  m.lock();
+  m.unlock();
 };
 
-template <typename Mutex>
-concept SharedLockable = requires(Mutex m) {
-  { m.lock_shared() };
-  { m.unlock_shared() };
+// Concept to check if a M has shared locking capabilities
+template <typename M>
+concept SharedLockable = requires(M m) {
+  m.lock_shared();
+  m.unlock_shared();
 };
 
-template <typename Mutex, typename Data>
-  requires detail::Lockable<Mutex>
+// Exclusive Lock Guard
+template <typename T, Lockable M>
 class LockGuard final {
 public:
-  LockGuard(Mutex& mutex, Data& data) : mutex_{mutex}, data_{data} {
+  LockGuard(M& mutex, T& data) : mutex_{mutex}, data_{data} {
     mutex_.lock();
   }
 
@@ -32,23 +31,24 @@ public:
     mutex_.unlock();
   }
 
-  Data* operator->() {
+  auto operator->() -> T* {
     return &data_;
   }
-  Data& operator*() {
+
+  auto operator*() -> T& {
     return data_;
   }
 
 private:
-  Mutex& mutex_;
-  Data& data_;
+  M& mutex_;
+  T& data_;
 };
 
-template <typename Mutex, typename Data>
-  requires detail::SharedLockable<Mutex>
+// Shared Lock Guard
+template <typename T, SharedLockable M>
 class SharedLockGuard final {
 public:
-  SharedLockGuard(Mutex& mutex, const Data& data) : mutex_{mutex}, data_{data} {
+  SharedLockGuard(M& mutex, T const& data) : mutex_{mutex}, data_{data} {
     mutex_.lock_shared();
   }
 
@@ -56,68 +56,60 @@ public:
     mutex_.unlock_shared();
   }
 
-  const Data* operator->() const {
+  auto operator->() const -> T const* {
     return &data_;
   }
-  const Data& operator*() const {
+
+  auto operator*() const -> T const& {
     return data_;
   }
 
 private:
-  Mutex& mutex_;
-  const Data& data_;
+  M& mutex_;
+  T const& data_;
 };
 
-} // namespace detail
-
-template <typename Mutex, typename Data>
-  requires detail::Lockable<Mutex>
-class BasicMutex {
+template <typename T, Lockable M = std::mutex>
+class Mutex {
 public:
-  explicit BasicMutex(Data&& data) : data_{std::move(data)} {
+  explicit Mutex(T&& data) : data_{std::move(data)} {
   }
 
-  explicit BasicMutex(const Data& data) : data_{data} {
+  explicit Mutex(T const& data) : data_{data} {
   }
 
-  // Non-copyable and non-movable
-  BasicMutex(const BasicMutex&) = delete;
-  BasicMutex& operator=(const BasicMutex&) = delete;
+  Mutex(Mutex const&) = delete;
+  Mutex& operator=(Mutex const&) = delete;
 
-  auto lock() {
-    return detail::LockGuard<Mutex, Data>{mutex_, data_};
+  [[nodiscard]] auto lock() -> LockGuard<T, M> {
+    return {mutex_, data_};
   }
 
-  template <typename Func>
-  void lock(Func&& func) {
-    std::forward<Func>(func)(*lock());
+  void lock(auto&& func) {
+    auto guard = lock();
+    std::forward<decltype(func)>(func)(*guard);
   }
 
-  auto lock_shared() const
-    requires detail::SharedLockable<Mutex>
-  {
-    return detail::SharedLockGuard<Mutex, Data>{mutex_, data_};
+  template <SharedLockable M_ = M>
+  [[nodiscard]] auto lock_shared() const -> SharedLockGuard<T, M_> {
+    return {mutex_, data_};
   }
 
-  template <typename Func>
-    requires detail::SharedLockable<Mutex>
-  void lock_shared(Func&& func) const {
-    std::forward<Func>(func)(*lock_shared());
+  template <SharedLockable M_ = M>
+  void lock_shared(auto&& func) const {
+    auto const guard = lock_shared();
+    std::forward<decltype(func)>(func)(*guard);
   }
 
 private:
-  mutable Mutex mutex_;
-  Data data_;
+  mutable M mutex_;
+  T data_;
 };
 
-// Type aliases
-template <typename Data>
-using Mutex = BasicMutex<std::mutex, Data>;
+template <typename T>
+using RecursiveMutex = Mutex<T, std::recursive_mutex>;
 
-template <typename Data>
-using RecursiveMutex = BasicMutex<std::recursive_mutex, Data>;
+template <typename T>
+using SharedMutex = Mutex<T, std::shared_mutex>;
 
-template <typename Data>
-using SharedMutex = BasicMutex<std::shared_mutex, Data>;
-
-} // namespace rscpp
+} // namespace crust
