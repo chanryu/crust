@@ -31,7 +31,7 @@ for (auto& thread : threads) {
     thread.join();
 }
 
-std::cout << "Final counter value: " << *counter.lock() << std::endl;
+assert(*counter.lock() == 10);
 ```
 
   </td>
@@ -55,7 +55,7 @@ for handle in handles {
     handle.join().unwrap();
 }
 
-println!("Final counter value: {}", *counter.lock().unwrap());
+assert!(*counter.lock().unwrap() == 10);
 ```
 
   </td>
