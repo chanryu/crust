@@ -48,7 +48,7 @@ TEST(SharedMutexTest, SharedLock) {
 }
 
 TEST(SharedMutexTest, MultiThreadedSharedLock) {
-  SharedMutex<std::pair<int, int>> mutex{{0, 0}};
+  SharedMutex<std::pair<int, int>> mutex{0, 0};
   std::vector<std::thread> threads;
 
   // producer - update first and second with 10ms interval

@@ -78,6 +78,10 @@ public:
   explicit Mutex(T const& data) : data_{data} {
   }
 
+  template <typename... Args>
+  explicit Mutex(Args&&... args) : data_(std::forward<Args>(args)...) {
+  }
+
   Mutex(Mutex const&) = delete;
   Mutex& operator=(Mutex const&) = delete;
 
