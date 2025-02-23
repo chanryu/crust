@@ -5,85 +5,83 @@
 
 namespace rscpp {
 
-namespace detail {
-
-// Concept to check if a Mutex has exclusive locking capabilities
-template <typename Mutex>
-concept Lockable = requires(Mutex m) {
+// Concept to check if a M has exclusive locking capabilities
+template <typename M>
+concept Lockable = requires(M m) {
   m.lock();
   m.unlock();
 };
 
-// Concept to check if a Mutex has shared locking capabilities
-template <typename Mutex>
-concept SharedLockable = requires(Mutex m) {
+// Concept to check if a M has shared locking capabilities
+template <typename M>
+concept SharedLockable = requires(M m) {
   m.lock_shared();
   m.unlock_shared();
 };
 
 // Exclusive Lock Guard
-template <Lockable Mutex, typename Data>
+template <typename T, Lockable M>
 class LockGuard final {
 public:
-  LockGuard(Mutex& mutex, Data& data) : mutex_{mutex}, data_{data} {
+  LockGuard(M& mutex, T& data) : mutex_{mutex}, data_{data} {
     mutex_.lock();
   }
+
   ~LockGuard() {
     mutex_.unlock();
   }
 
-  auto operator->() -> Data* {
+  auto operator->() -> T* {
     return &data_;
   }
-  auto operator*() -> Data& {
+
+  auto operator*() -> T& {
     return data_;
   }
 
 private:
-  Mutex& mutex_;
-  Data& data_;
+  M& mutex_;
+  T& data_;
 };
 
 // Shared Lock Guard
-template <SharedLockable Mutex, typename Data>
+template <typename T, SharedLockable M>
 class SharedLockGuard final {
 public:
-  SharedLockGuard(Mutex& mutex, Data const& data) : mutex_{mutex}, data_{data} {
+  SharedLockGuard(M& mutex, T const& data) : mutex_{mutex}, data_{data} {
     mutex_.lock_shared();
   }
+
   ~SharedLockGuard() {
     mutex_.unlock_shared();
   }
 
-  auto operator->() const -> Data const* {
+  auto operator->() const -> T const* {
     return &data_;
   }
-  auto operator*() const -> Data const& {
+
+  auto operator*() const -> T const& {
     return data_;
   }
 
 private:
-  Mutex& mutex_;
-  Data const& data_;
+  M& mutex_;
+  T const& data_;
 };
 
-} // namespace detail
-
-// BasicMutex implementation
-template <typename Data, detail::Lockable Mutex>
-class BasicMutex {
+template <typename T, Lockable M = std::mutex>
+class Mutex {
 public:
-  explicit BasicMutex(Data&& data) : data_{std::move(data)} {
+  explicit Mutex(T&& data) : data_{std::move(data)} {
   }
 
-  explicit BasicMutex(Data const& data) : data_{data} {
+  explicit Mutex(T const& data) : data_{data} {
   }
 
-  // Non-copyable and non-movable
-  BasicMutex(BasicMutex const&) = delete;
-  BasicMutex& operator=(BasicMutex const&) = delete;
+  Mutex(Mutex const&) = delete;
+  Mutex& operator=(Mutex const&) = delete;
 
-  [[nodiscard]] auto lock() -> detail::LockGuard<Mutex, Data> {
+  [[nodiscard]] auto lock() -> LockGuard<T, M> {
     return {mutex_, data_};
   }
 
@@ -92,30 +90,26 @@ public:
     std::forward<decltype(func)>(func)(*guard);
   }
 
-  template <detail::SharedLockable M = Mutex>
-  [[nodiscard]] auto lock_shared() const -> detail::SharedLockGuard<M, Data> {
+  template <SharedLockable M_ = M>
+  [[nodiscard]] auto lock_shared() const -> SharedLockGuard<T, M_> {
     return {mutex_, data_};
   }
 
-  template <detail::SharedLockable M = Mutex>
+  template <SharedLockable M_ = M>
   void lock_shared(auto&& func) const {
-    auto guard = lock_shared();
+    auto const guard = lock_shared();
     std::forward<decltype(func)>(func)(*guard);
   }
 
 private:
-  mutable Mutex mutex_;
-  Data data_;
+  mutable M mutex_;
+  T data_;
 };
 
-// Type aliases
-template <typename Data>
-using Mutex = BasicMutex<Data, std::mutex>;
+template <typename T>
+using RecursiveMutex = Mutex<T, std::recursive_mutex>;
 
-template <typename Data>
-using RecursiveMutex = BasicMutex<Data, std::recursive_mutex>;
-
-template <typename Data>
-using SharedMutex = BasicMutex<Data, std::shared_mutex>;
+template <typename T>
+using SharedMutex = Mutex<T, std::shared_mutex>;
 
 } // namespace rscpp
