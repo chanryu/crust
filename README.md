@@ -7,10 +7,16 @@ after using Rust, writing C++ feels like eating a sandwich without the bread.
 
 ## Mutex
 
-| crust::Mutex | std::sync::Mutex |
-| - | - |
-| <pre><code>
-Mutex<int> counter{0};
+<table>
+<tr>
+  <th>crust::Mutex</th>
+  <th>std::sync::Mutex</th>
+</tr>
+<tr>
+  <td>
+
+```cpp
+crust::Mutex<int> counter{0};
 constexpr int num_threads = 10;
 std::vector<std::thread> threads;
 
@@ -26,4 +32,32 @@ for (auto& thread : threads) {
 }
 
 std::cout << "Final counter value: " << *counter.lock() << std::endl;
-</pre></code> | x |
+```
+
+  </td>
+  <td>
+  
+```rust
+let counter = Arc::new(Mutex::new(0));
+let num_threads = 10;
+let mut handles = vec![];
+
+for _ in 0..num_threads {
+    let counter = Arc::clone(&counter);
+    let handle = thread::spawn(move || {
+        let mut value = counter.lock().unwrap();
+        *value += 1;
+    });
+    handles.push(handle);
+}
+
+for handle in handles {
+    handle.join().unwrap();
+}
+
+println!("Final counter value: {}", *counter.lock().unwrap());
+```
+
+  </td>
+</tr>
+</table>
