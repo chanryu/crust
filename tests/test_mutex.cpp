@@ -4,7 +4,7 @@
 
 #include "mutex.hpp"
 
-namespace rscpp {
+namespace crust {
 namespace {
 
 TEST(MutexTest, ExclusiveLock) {
@@ -86,4 +86,4 @@ TEST(SharedMutexTest, SharedLockGuard) {
 }
 
 } // namespace
-} // namespace rscpp
+} // namespace crust

@@ -3,7 +3,7 @@
 #include <mutex>
 #include <shared_mutex>
 
-namespace rscpp {
+namespace crust {
 
 // Concept to check if a M has exclusive locking capabilities
 template <typename M>
@@ -112,4 +112,4 @@ using RecursiveMutex = Mutex<T, std::recursive_mutex>;
 template <typename T>
 using SharedMutex = Mutex<T, std::shared_mutex>;
 
-} // namespace rscpp
+} // namespace crust
