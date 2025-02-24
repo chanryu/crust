@@ -22,7 +22,7 @@ Right now, it includes:
 
 `crust::Mutex` is designed to mimic Rust’s `std::sync::Mutex` by binding the mutex with the data it protects. This prevents accidental misuse, such as accessing shared data without locking. Unlike `std::mutex` in C++, where the mutex and data are separate, `crust::Mutex<T>` ensures that locking grants scoped, safe access to `T`, just like Rust’s `Mutex<T>`. It simplifies synchronization by encapsulating both the locking mechanism and the protected resource in a single entity.
 
-Below is a side-by-side code comparison of crust::Mutex and std::sync::Mutex. The examples are intentionally written to be as similar as possible to highlight their conceptual equivalence.
+Below is a side-by-side code comparison of `crust::Mutex` and `std::sync::Mutex`. The example is intentionally written to be as similar as possible to highlight their conceptual equivalence.
 
 <table>
 <tr>
