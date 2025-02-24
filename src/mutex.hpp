@@ -23,21 +23,13 @@ concept SharedLockable = requires(M m) {
 template <typename T, Lockable M>
 class LockGuard final {
 public:
-  LockGuard(M& mutex, T& data) : mutex_{mutex}, data_{data} {
-    mutex_.lock();
-  }
+  LockGuard(M& mutex, T& data) : mutex_{mutex}, data_{data} { mutex_.lock(); }
 
-  ~LockGuard() {
-    mutex_.unlock();
-  }
+  ~LockGuard() { mutex_.unlock(); }
 
-  auto operator->() -> T* {
-    return &data_;
-  }
+  auto operator->() -> T* { return &data_; }
 
-  auto operator*() -> T& {
-    return data_;
-  }
+  auto operator*() -> T& { return data_; }
 
 private:
   M& mutex_;
@@ -48,21 +40,11 @@ private:
 template <typename T, SharedLockable M>
 class SharedLockGuard final {
 public:
-  SharedLockGuard(M& mutex, T const& data) : mutex_{mutex}, data_{data} {
-    mutex_.lock_shared();
-  }
+  SharedLockGuard(M& mutex, T const& data) : mutex_{mutex}, data_{data} { mutex_.lock_shared(); }
+  ~SharedLockGuard() { mutex_.unlock_shared(); }
 
-  ~SharedLockGuard() {
-    mutex_.unlock_shared();
-  }
-
-  auto operator->() const -> T const* {
-    return &data_;
-  }
-
-  auto operator*() const -> T const& {
-    return data_;
-  }
+  auto operator->() const -> T const* { return &data_; }
+  auto operator*() const -> T const& { return data_; }
 
 private:
   M& mutex_;
@@ -72,22 +54,16 @@ private:
 template <typename T, Lockable M = std::mutex>
 class Mutex {
 public:
-  explicit Mutex(T&& data) : data_{std::move(data)} {
-  }
-
-  explicit Mutex(T const& data) : data_{data} {
-  }
+  explicit Mutex(T&& data) : data_{std::move(data)} {}
+  explicit Mutex(T const& data) : data_{data} {}
 
   template <typename... Args>
-  explicit Mutex(Args&&... args) : data_(std::forward<Args>(args)...) {
-  }
+  explicit Mutex(Args&&... args) : data_(std::forward<Args>(args)...) {}
 
   Mutex(Mutex const&) = delete;
   Mutex& operator=(Mutex const&) = delete;
 
-  [[nodiscard]] auto lock() {
-    return LockGuard<T, M>{mutex_, data_};
-  }
+  [[nodiscard]] auto lock() { return LockGuard<T, M>{mutex_, data_}; }
 
   void lock(auto&& func) {
     auto guard = lock();
