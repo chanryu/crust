@@ -85,8 +85,8 @@ public:
   Mutex(Mutex const&) = delete;
   Mutex& operator=(Mutex const&) = delete;
 
-  [[nodiscard]] auto lock() -> LockGuard<T, M> {
-    return {mutex_, data_};
+  [[nodiscard]] auto lock() {
+    return LockGuard<T, M>{mutex_, data_};
   }
 
   void lock(auto&& func) {
@@ -94,13 +94,15 @@ public:
     std::forward<decltype(func)>(func)(*guard);
   }
 
-  template <SharedLockable M_ = M>
-  [[nodiscard]] auto lock_shared() const -> SharedLockGuard<T, M_> {
-    return {mutex_, data_};
+  [[nodiscard]] auto lock_shared() const
+    requires SharedLockable<M>
+  {
+    return SharedLockGuard<T, M>{mutex_, data_};
   }
 
-  template <SharedLockable M_ = M>
-  void lock_shared(auto&& func) const {
+  void lock_shared(auto&& func) const
+    requires SharedLockable<M>
+  {
     auto const guard = lock_shared();
     std::forward<decltype(func)>(func)(*guard);
   }
