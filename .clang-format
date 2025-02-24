@@ -3,18 +3,13 @@ Language: Cpp
 BasedOnStyle: LLVM
 
 AlwaysBreakTemplateDeclarations: true
-
-AllowShortFunctionsOnASingleLine: true
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLambdasOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: Empty
 BreakBeforeBraces: Custom
 BraceWrapping:
   BeforeCatch: true
   BeforeElse: true
   SplitEmptyFunction: true
-
 ColumnLimit: 120
 PointerAlignment: Left
 SpaceInEmptyParentheses: false
