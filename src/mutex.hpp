@@ -5,30 +5,25 @@
 
 namespace crust {
 
-// Concept to check if a M has exclusive locking capabilities
 template <typename M>
 concept Lockable = requires(M m) {
   m.lock();
   m.unlock();
 };
 
-// Concept to check if a M has shared locking capabilities
 template <typename M>
 concept SharedLockable = requires(M m) {
   m.lock_shared();
   m.unlock_shared();
 };
 
-// Exclusive Lock Guard
 template <typename T, Lockable M>
 class LockGuard final {
 public:
   LockGuard(M& mutex, T& data) : mutex_{mutex}, data_{data} { mutex_.lock(); }
-
   ~LockGuard() { mutex_.unlock(); }
 
   auto operator->() -> T* { return &data_; }
-
   auto operator*() -> T& { return data_; }
 
 private:
@@ -36,7 +31,6 @@ private:
   T& data_;
 };
 
-// Shared Lock Guard
 template <typename T, SharedLockable M>
 class SharedLockGuard final {
 public:
