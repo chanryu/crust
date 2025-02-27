@@ -2,6 +2,8 @@
 
 #include <mutex>
 #include <shared_mutex>
+#include <tuple>
+#include <type_traits>
 
 namespace crust {
 
@@ -20,13 +22,19 @@ concept SharedLockable = requires(M m) {
 template <typename T, Lockable M>
 class LockGuard final {
 public:
-  LockGuard(M& mutex, T& data) : mutex_{mutex}, data_{data} {
+  LockGuard(M& mutex, T& data) noexcept : mutex_{mutex}, data_{data} {
     mutex_.lock();
   }
 
-  ~LockGuard() {
+  ~LockGuard() noexcept {
     mutex_.unlock();
   }
+
+  // Explicitly delete copy/move operations
+  LockGuard(const LockGuard&) = delete;
+  LockGuard& operator=(const LockGuard&) = delete;
+  LockGuard(LockGuard&&) = delete;
+  LockGuard& operator=(LockGuard&&) = delete;
 
   auto operator->() -> T* {
     return &data_;
@@ -44,13 +52,19 @@ private:
 template <typename T, SharedLockable M>
 class SharedLockGuard final {
 public:
-  SharedLockGuard(M& mutex, T const& data) : mutex_{mutex}, data_{data} {
+  SharedLockGuard(M& mutex, T const& data) noexcept : mutex_{mutex}, data_{data} {
     mutex_.lock_shared();
   }
 
-  ~SharedLockGuard() {
+  ~SharedLockGuard() noexcept {
     mutex_.unlock_shared();
   }
+
+  // Explicitly delete copy/move operations
+  SharedLockGuard(const SharedLockGuard&) = delete;
+  SharedLockGuard& operator=(const SharedLockGuard&) = delete;
+  SharedLockGuard(SharedLockGuard&&) = delete;
+  SharedLockGuard& operator=(SharedLockGuard&&) = delete;
 
   auto operator->() const -> T const* {
     return &data_;
@@ -65,15 +79,68 @@ private:
   T const& data_;
 };
 
+// Forward declarations
 template <typename T, Lockable M = std::mutex>
+class Mutex;
+
+// New class for managing multiple mutexes
+template <typename... MutexTypes>
+class ScopedLockGuard final {
+private:
+  using TupleType = std::tuple<MutexTypes&...>;
+  TupleType mutexes_;
+  std::tuple<typename MutexTypes::value_type&...> data_;
+  std::scoped_lock<typename MutexTypes::mutex_type...> lock_;
+
+public:
+  ScopedLockGuard(MutexTypes&... mutexes) : mutexes_(mutexes...), data_(mutexes.data_...), lock_(mutexes.mutex_...) {}
+
+  // Explicitly delete copy/move operations
+  ScopedLockGuard(const ScopedLockGuard&) = delete;
+  ScopedLockGuard& operator=(const ScopedLockGuard&) = delete;
+  ScopedLockGuard(ScopedLockGuard&&) = delete;
+  ScopedLockGuard& operator=(ScopedLockGuard&&) = delete;
+
+  // Return a tuple of references to the protected data
+  auto& get_data() {
+    return data_;
+  }
+
+  // Helper to access individual elements by index
+  template <size_t I>
+  auto& get() {
+    return std::get<I>(data_);
+  }
+};
+
+template <typename T, Lockable M>
 class Mutex {
 public:
+  // Define internal types to help with the ScopedLockGuard
+  using value_type = T;
+  using mutex_type = M;
+
+  // Static assertion to ensure T is a valid type for this template
+  static_assert(!std::is_reference_v<T>, "T cannot be a reference type");
+  static_assert(std::is_object_v<T>, "T must be an object type");
+
   template <typename... Args>
   explicit Mutex(Args&&... args) : data_(std::forward<Args>(args)...) {}
 
   explicit Mutex(T const& data) : data_{data} {}
   explicit Mutex(T&& data) : data_{std::move(data)} {}
 
+  // Add move operations
+  Mutex(Mutex&& other) noexcept(std::is_nothrow_move_constructible_v<T>) : data_{std::move(other.data_)} {}
+
+  Mutex& operator=(Mutex&& other) noexcept(std::is_nothrow_move_assignable_v<T>) {
+    if (this != &other) {
+      data_ = std::move(other.data_);
+    }
+    return *this;
+  }
+
+  // Delete copy operations
   Mutex(Mutex const&) = delete;
   Mutex& operator=(Mutex const&) = delete;
 
@@ -81,9 +148,10 @@ public:
     return LockGuard<T, M>{mutex_, data_};
   }
 
-  void lock(auto&& func) {
+  template <typename F>
+  auto lock(F&& func) -> decltype(auto) {
     auto guard = lock();
-    std::forward<decltype(func)>(func)(*guard);
+    return std::forward<F>(func)(*guard);
   }
 
   [[nodiscard]] auto lock_shared() const
@@ -92,17 +160,42 @@ public:
     return SharedLockGuard<T, M>{mutex_, data_};
   }
 
-  void lock_shared(auto&& func) const
+  template <typename F>
+  auto lock_shared(F&& func) const -> decltype(auto)
     requires SharedLockable<M>
   {
     auto const guard = lock_shared();
-    std::forward<decltype(func)>(func)(*guard);
+    return std::forward<F>(func)(*guard);
   }
+
+  // Allow controlled access to internal data
+  // These are for use by the ScopedLockGuard and scoped_lock function
+  template <typename... MutexTypes>
+  friend class ScopedLockGuard;
+
+  template <typename... MutexTypes>
+  friend auto scoped_lock(MutexTypes&... mutexes);
+
+  template <typename F, typename... MutexTypes>
+  friend auto with_scoped_lock(F&& func, MutexTypes&... mutexes) -> decltype(auto);
 
 private:
   mutable M mutex_;
   T data_;
 };
+
+// Helper function to create a ScopedLockGuard
+template <typename... MutexTypes>
+auto scoped_lock(MutexTypes&... mutexes) {
+  return ScopedLockGuard<MutexTypes...>(mutexes...);
+}
+
+// Helper function that takes a callback
+template <typename F, typename... MutexTypes>
+auto with_scoped_lock(F&& func, MutexTypes&... mutexes) -> decltype(auto) {
+  auto guard = scoped_lock(mutexes...);
+  return std::apply(std::forward<F>(func), guard.get_data());
+}
 
 template <typename T>
 using RecursiveMutex = Mutex<T, std::recursive_mutex>;
