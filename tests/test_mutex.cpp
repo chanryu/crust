@@ -21,7 +21,7 @@ protected:
 
 // Basic test for Mutex construction and data access
 TEST_F(MutexTest, BasicConstruction) {
-  crust::Mutex<int> mutex_int(42);
+  Mutex<int> mutex_int(42);
 
   {
     auto guard = mutex_int.lock();
@@ -37,10 +37,10 @@ TEST_F(MutexTest, BasicConstruction) {
 
 // Test move construction and assignment
 TEST_F(MutexTest, MoveOperations) {
-  crust::Mutex<std::string> mutex_str("test");
+  Mutex<std::string> mutex_str("test");
 
   // Test move construction
-  crust::Mutex<std::string> moved_mutex(std::move(mutex_str));
+  Mutex<std::string> moved_mutex(std::move(mutex_str));
 
   {
     auto guard = moved_mutex.lock();
@@ -48,7 +48,7 @@ TEST_F(MutexTest, MoveOperations) {
   }
 
   // Test move assignment
-  crust::Mutex<std::string> assigned_mutex("");
+  Mutex<std::string> assigned_mutex("");
   assigned_mutex = std::move(moved_mutex);
 
   {
@@ -66,7 +66,7 @@ TEST_F(MutexTest, InPlaceConstruction) {
     TestStruct(int a_, std::string b_) : a(a_), b(std::move(b_)) {}
   };
 
-  crust::Mutex<TestStruct> mutex(10, "hello");
+  Mutex<TestStruct> mutex(10, "hello");
 
   {
     auto guard = mutex.lock();
@@ -77,7 +77,7 @@ TEST_F(MutexTest, InPlaceConstruction) {
 
 // Test concurrent access to mutex
 TEST_F(MutexTest, ConcurrentAccess) {
-  crust::Mutex<int> counter(0);
+  Mutex<int> counter(0);
   std::atomic<bool> ready(false);
   constexpr int num_threads = 10;
   constexpr int iterations = 1000;
@@ -115,7 +115,7 @@ TEST_F(MutexTest, ConcurrentAccess) {
 
 // Test for SharedMutex
 TEST_F(MutexTest, SharedMutex) {
-  crust::SharedMutex<std::string> shared_data("shared text");
+  SharedMutex<std::string> shared_data("shared text");
   std::atomic<int> readers_done(0);
   std::atomic<bool> writer_done(false);
   std::atomic<bool> start(false);
@@ -185,12 +185,12 @@ TEST_F(MutexTest, SharedMutex) {
 
 // Test for ScopedLockGuard with multiple mutexes
 TEST_F(MutexTest, ScopedLockGuard) {
-  crust::Mutex<int> mutex1(1);
-  crust::Mutex<std::string> mutex2("two");
-  crust::Mutex<double> mutex3(3.0);
+  Mutex<int> mutex1(1);
+  Mutex<std::string> mutex2("two");
+  Mutex<double> mutex3(3.0);
 
   {
-    auto guard = crust::scoped_lock(mutex1, mutex2, mutex3);
+    auto guard = scoped_lock(mutex1, mutex2, mutex3);
 
     // Test access by index
     EXPECT_EQ(guard.get<0>(), 1);
@@ -220,11 +220,11 @@ TEST_F(MutexTest, ScopedLockGuard) {
 
 // Test for with_scoped_lock helper function
 TEST_F(MutexTest, WithScopedLock) {
-  crust::Mutex<int> mutex1(1);
-  crust::Mutex<std::string> mutex2("two");
+  Mutex<int> mutex1(1);
+  Mutex<std::string> mutex2("two");
 
   // Use with_scoped_lock to perform an operation on multiple mutexes
-  auto result = crust::with_scoped_lock(
+  auto result = with_scoped_lock(
       [](int& a, std::string& b) {
         a += 10;
         b += " modified";
@@ -248,7 +248,7 @@ TEST_F(MutexTest, WithScopedLock) {
 
 // Test for RecursiveMutex
 TEST_F(MutexTest, RecursiveMutex) {
-  crust::RecursiveMutex<int> recursive_mutex(0);
+  RecursiveMutex<int> recursive_mutex(0);
 
   // Define a recursive function that acquires the lock multiple times
   std::function<void(int)> recursive_func;
@@ -275,8 +275,8 @@ TEST_F(MutexTest, RecursiveMutex) {
 
 // Test for deadlock prevention (this is a bit tricky to test thoroughly)
 TEST_F(MutexTest, DeadlockPrevention) {
-  crust::Mutex<int> mutex1(1);
-  crust::Mutex<int> mutex2(2);
+  Mutex<int> mutex1(1);
+  Mutex<int> mutex2(2);
 
   // This tests that we can lock mutexes in different orders without deadlock
   // This is possible because scoped_lock acquires all locks at once in an implementation-defined order
@@ -284,7 +284,7 @@ TEST_F(MutexTest, DeadlockPrevention) {
 
   std::thread t1([&mutex1, &mutex2, &success] {
     try {
-      auto guard = crust::scoped_lock(mutex1, mutex2);
+      auto guard = scoped_lock(mutex1, mutex2);
       std::this_thread::sleep_for(50ms);
       guard.get<0>() += 10;
       guard.get<1>() += 20;
@@ -298,7 +298,7 @@ TEST_F(MutexTest, DeadlockPrevention) {
     try {
       // Intentionally reverse order from t1
       std::this_thread::sleep_for(10ms);
-      auto guard = crust::scoped_lock(mutex2, mutex1);
+      auto guard = scoped_lock(mutex2, mutex1);
       guard.get<0>() += 5;
       guard.get<1>() += 5;
     }
