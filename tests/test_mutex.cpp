@@ -134,7 +134,7 @@ TEST_F(MutexTest, SharedMutex) {
       {
         auto guard = shared_data.lock_shared();
         // Just verify we can read the data
-        EXPECT_FALSE((*guard).empty());
+        EXPECT_FALSE(guard->empty());
         // Simulate some work
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
       }

@@ -96,7 +96,7 @@ public:
   ScopedLockGuard(ScopedLockGuard&&) = delete;
   ScopedLockGuard& operator=(ScopedLockGuard&&) = delete;
 
-  auto& get_data() {
+  auto operator*() -> decltype(data_)& {
     return data_;
   }
 
@@ -179,7 +179,7 @@ auto scoped_lock(MutexTypes&... mutexes) {
 template <typename F, typename... MutexTypes>
 auto with_scoped_lock(F&& func, MutexTypes&... mutexes) -> decltype(auto) {
   auto guard = scoped_lock(mutexes...);
-  return std::apply(std::forward<F>(func), guard.get_data());
+  return std::apply(std::forward<F>(func), *guard);
 }
 
 template <typename T>
