@@ -30,7 +30,6 @@ public:
     mutex_.unlock();
   }
 
-  // Explicitly delete copy/move operations
   LockGuard(const LockGuard&) = delete;
   LockGuard& operator=(const LockGuard&) = delete;
   LockGuard(LockGuard&&) = delete;
@@ -60,7 +59,6 @@ public:
     mutex_.unlock_shared();
   }
 
-  // Explicitly delete copy/move operations
   SharedLockGuard(const SharedLockGuard&) = delete;
   SharedLockGuard& operator=(const SharedLockGuard&) = delete;
   SharedLockGuard(SharedLockGuard&&) = delete;
@@ -79,11 +77,9 @@ private:
   T const& data_;
 };
 
-// Forward declarations
 template <typename T, Lockable M = std::mutex>
 class Mutex;
 
-// New class for managing multiple mutexes
 template <typename... MutexTypes>
 class ScopedLockGuard final {
 private:
@@ -95,18 +91,15 @@ private:
 public:
   ScopedLockGuard(MutexTypes&... mutexes) : mutexes_(mutexes...), data_(mutexes.data_...), lock_(mutexes.mutex_...) {}
 
-  // Explicitly delete copy/move operations
   ScopedLockGuard(const ScopedLockGuard&) = delete;
   ScopedLockGuard& operator=(const ScopedLockGuard&) = delete;
   ScopedLockGuard(ScopedLockGuard&&) = delete;
   ScopedLockGuard& operator=(ScopedLockGuard&&) = delete;
 
-  // Return a tuple of references to the protected data
   auto& get_data() {
     return data_;
   }
 
-  // Helper to access individual elements by index
   template <size_t I>
   auto& get() {
     return std::get<I>(data_);
@@ -116,11 +109,9 @@ public:
 template <typename T, Lockable M>
 class Mutex {
 public:
-  // Define internal types to help with the ScopedLockGuard
   using value_type = T;
   using mutex_type = M;
 
-  // Static assertion to ensure T is a valid type for this template
   static_assert(!std::is_reference_v<T>, "T cannot be a reference type");
   static_assert(std::is_object_v<T>, "T must be an object type");
 
@@ -130,7 +121,6 @@ public:
   explicit Mutex(T const& data) : data_{data} {}
   explicit Mutex(T&& data) : data_{std::move(data)} {}
 
-  // Add move operations
   Mutex(Mutex&& other) noexcept(std::is_nothrow_move_constructible_v<T>) : data_{std::move(other.data_)} {}
 
   Mutex& operator=(Mutex&& other) noexcept(std::is_nothrow_move_assignable_v<T>) {
@@ -140,7 +130,6 @@ public:
     return *this;
   }
 
-  // Delete copy operations
   Mutex(Mutex const&) = delete;
   Mutex& operator=(Mutex const&) = delete;
 
@@ -168,8 +157,6 @@ public:
     return std::forward<F>(func)(*guard);
   }
 
-  // Allow controlled access to internal data
-  // These are for use by the ScopedLockGuard and scoped_lock function
   template <typename... MutexTypes>
   friend class ScopedLockGuard;
 
@@ -184,13 +171,11 @@ private:
   T data_;
 };
 
-// Helper function to create a ScopedLockGuard
 template <typename... MutexTypes>
 auto scoped_lock(MutexTypes&... mutexes) {
   return ScopedLockGuard<MutexTypes...>(mutexes...);
 }
 
-// Helper function that takes a callback
 template <typename F, typename... MutexTypes>
 auto with_scoped_lock(F&& func, MutexTypes&... mutexes) -> decltype(auto) {
   auto guard = scoped_lock(mutexes...);
