@@ -7,6 +7,8 @@
 
 #include "mutex.hpp"
 
+using namespace std::chrono_literals;
+
 namespace crust {
 namespace {
 
@@ -148,14 +150,14 @@ TEST_F(MutexTest, SharedMutex) {
     }
 
     // Wait until readers have started
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(10ms);
 
     // Modify the shared data
     {
       auto guard = shared_data.lock();
       *guard = "modified shared text";
       // Simulate some work
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(100ms);
     }
 
     writer_done.store(true);
@@ -283,7 +285,7 @@ TEST_F(MutexTest, DeadlockPrevention) {
   std::thread t1([&mutex1, &mutex2, &success] {
     try {
       auto guard = crust::scoped_lock(mutex1, mutex2);
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      std::this_thread::sleep_for(50ms);
       guard.get<0>() += 10;
       guard.get<1>() += 20;
     }
@@ -295,7 +297,7 @@ TEST_F(MutexTest, DeadlockPrevention) {
   std::thread t2([&mutex1, &mutex2, &success] {
     try {
       // Intentionally reverse order from t1
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(10ms);
       auto guard = crust::scoped_lock(mutex2, mutex1);
       guard.get<0>() += 5;
       guard.get<1>() += 5;
