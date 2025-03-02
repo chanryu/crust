@@ -64,11 +64,6 @@ public:
     return std::move(data_);
   }
 
-  template <std::equality_comparable_with<T> U>
-  [[nodiscard]] friend bool operator==(const Cow& lhs, const U& rhs) {
-    return *lhs.data_ == rhs;
-  }
-
 private:
   void make_unique() {
     if (data_.use_count() > 1) {

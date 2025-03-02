@@ -161,15 +161,6 @@ TEST_F(CowTest, ArrowOperator) {
   EXPECT_EQ(cow->size(), 4);
 }
 
-TEST_F(CowTest, EqualityOperator) {
-  StringCow cow("test");
-  EXPECT_TRUE(cow == "test");
-  EXPECT_FALSE(cow == "other");
-
-  std::string str = "test";
-  EXPECT_TRUE(cow == str);
-}
-
 // Test implicit conversion
 TEST_F(CowTest, ImplicitConversion) {
   StringCow cow("test");
