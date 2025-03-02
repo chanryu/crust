@@ -78,3 +78,81 @@ assert!(*counter.lock().unwrap() == 10);
   </td>
 </tr>
 </table>
+
+
+### Cow
+
+`crust::Cow` (Copy-on-Write) is inspired by Rust's `std::borrow::Cow`. It provides efficient handling of data that's usually read but occasionally modified. Unlike Rust's implementation, which can borrow or own data, the C++ version always owns its data but optimizes copying by sharing the underlying data until a mutation occurs.
+
+`crust::Cow<T>` is particularly useful when you need to pass read-only data around that may occasionally need modification. Instead of always making deep copies, it only clones the data when it's actually modified, improving performance for read-heavy workloads.
+
+<table>
+<tr>
+  <th>crust::Cow</th>
+  <th>std::borrow::Cow</th>
+</tr>
+<tr>
+  <td>
+
+```cpp
+// Create a Cow with an initial string
+crust::Cow text("hello");
+
+// Reading doesn't clone the data
+std::cout << *text << std::endl;
+
+// Multiple Cows can share the same data
+auto text2 = text;
+std::cout << (text.is_unique() ? "unique" : "shared")
+          << std::endl; // "shared"
+
+// Mutating triggers copy-on-write
+text.mutate([](std::string& s) {
+    s += " world";
+});
+
+// After mutation, data is no longer shared
+std::cout << (text.is_unique() ? "unique" : "shared") 
+          << std::endl; // "unique"
+std::cout << *text << std::endl;  // "hello world"
+std::cout << *text2 << std::endl; // "hello"
+```
+
+  </td>
+  <td>
+  
+```rust
+// Create a Cow that borrows a string slice
+let text: Cow = Cow::Borrowed("hello");
+
+// Reading doesn't clone the data
+println!("{}", text);
+
+// Making a clone for comparison 
+let text2 = text.clone();
+println!("{}", 
+    if Cow::is_borrowed(&text) { "borrowed" } 
+    else { "owned" }); // "borrowed"
+
+// Mutating converts to owned
+let text = text.into_owned() + " world";
+let text = Cow::Owned(text);
+
+// After mutation, data is now owned
+println!("{}", 
+    if Cow::is_borrowed(&text) { "borrowed" } 
+    else { "owned" }); // "owned"
+println!("{}", text);  // "hello world"
+println!("{}", text2); // "hello"
+```
+
+  </td>
+</tr>
+</table>
+
+The C++ implementation provides a clean, safe interface:
+
+- Safe read access via const references and operators
+- Explicit mutation via `mutate()` method with lambda
+- Automatic copy-on-write semantics
+- Works with any copyable type
