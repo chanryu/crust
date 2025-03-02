@@ -9,8 +9,8 @@ namespace {
 
 class CowTest : public ::testing::Test {
 protected:
-  using StringCow = crust::Cow<std::string>;
-  using VectorCow = crust::Cow<std::vector<int>>;
+  using StringCow = Cow<std::string>;
+  using VectorCow = Cow<std::vector<int>>;
 };
 
 // Test constructors
