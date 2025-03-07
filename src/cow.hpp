@@ -13,14 +13,24 @@ public:
     requires std::default_initializable<T>
       : data_(std::make_shared<T>()) {}
 
-  explicit Cow(T value) : data_(std::make_shared<T>(std::move(value))) {}
+  Cow(T const& value)
+    requires std::copy_constructible<T>
+      : data_(std::make_shared<T>(value)) {}
 
-  auto operator=(T const& value) -> Cow& {
+  Cow(T&& value)
+    requires std::move_constructible<T>
+      : data_(std::make_shared<T>(std::move(value))) {}
+
+  auto operator=(T const& value) -> Cow&
+    requires std::copy_constructible<T>
+  {
     data_ = std::make_shared<T>(value);
     return *this;
   }
 
-  auto operator=(T&& value) -> Cow& {
+  auto operator=(T&& value) -> Cow&
+    requires std::move_constructible<T>
+  {
     data_ = std::make_shared<T>(std::move(value));
     return *this;
   }
