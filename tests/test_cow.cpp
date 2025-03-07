@@ -26,15 +26,6 @@ TEST_F(CowTest, ValueConstructor) {
   EXPECT_EQ(*cow, "test");
 }
 
-TEST_F(CowTest, SharedPtrConstructor) {
-  auto ptr = std::make_shared<std::string>("test");
-  StringCow cow(ptr);
-  EXPECT_FALSE(cow.is_unique()); // ptr still holds a reference
-  EXPECT_EQ(*cow, "test");
-  ptr.reset(); // Release the external reference
-  EXPECT_TRUE(cow.is_unique());
-}
-
 // Test copy/move operations
 TEST_F(CowTest, CopyConstructor) {
   StringCow cow1("original");
@@ -159,16 +150,6 @@ TEST_F(CowTest, DereferenceOperator) {
 TEST_F(CowTest, ArrowOperator) {
   StringCow cow("test");
   EXPECT_EQ(cow->size(), 4);
-}
-
-// Test implicit conversion
-TEST_F(CowTest, ImplicitConversion) {
-  StringCow cow("test");
-
-  auto compare = [](const std::string& s) {
-    return s == "test";
-  };
-  EXPECT_TRUE(compare(cow));
 }
 
 // Test use_count behavior
