@@ -24,14 +24,18 @@ public:
   auto operator=(T const& value) -> Cow&
     requires std::copy_constructible<T>
   {
-    data_ = std::make_shared<T>(value);
+    if (this != &value) {
+      data_ = std::make_shared<T>(value);
+    }
     return *this;
   }
 
   auto operator=(T&& value) -> Cow&
     requires std::move_constructible<T>
   {
-    data_ = std::make_shared<T>(std::move(value));
+    if (this != &value) {
+      data_ = std::make_shared<T>(std::move(value));
+    }
     return *this;
   }
 
@@ -61,7 +65,7 @@ public:
   }
 
   auto swap(Cow& other) noexcept {
-    data_.swap(other.data_);
+    std::swap(data_, other.data_);
   }
 
   [[nodiscard]] auto release() && -> std::shared_ptr<T> {
