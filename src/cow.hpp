@@ -9,63 +9,71 @@ namespace crust {
 template <std::copyable T>
 class Cow {
 public:
-  Cow() : data_(std::make_shared<T>()) {}
-  explicit Cow(T value) : data_(std::make_shared<T>(std::move(value))) {}
-  explicit Cow(std::shared_ptr<T> ptr) : data_(std::move(ptr)) {}
+  Cow()
+    requires std::default_initializable<T>
+      : data_(std::make_shared<T>()) {}
 
-  Cow(const Cow&) noexcept = default;
-  Cow& operator=(const Cow&) noexcept = default;
-  Cow(Cow&&) noexcept = default;
-  Cow& operator=(Cow&&) noexcept = default;
+  Cow(T const& value)
+    requires std::copy_constructible<T>
+      : data_(std::make_shared<T>(value)) {}
 
-  Cow& operator=(const T& value) {
-    data_ = std::make_shared<T>(value);
+  Cow(T&& value)
+    requires std::move_constructible<T>
+      : data_(std::make_shared<T>(std::move(value))) {}
+
+  auto operator=(T const& value) -> Cow&
+    requires std::copy_constructible<T>
+  {
+    if (this != &value) {
+      data_ = std::make_shared<T>(value);
+    }
     return *this;
   }
 
-  Cow& operator=(T&& value) {
-    data_ = std::make_shared<T>(std::move(value));
+  auto operator=(T&& value) -> Cow&
+    requires std::move_constructible<T>
+  {
+    if (this != &value) {
+      data_ = std::make_shared<T>(std::move(value));
+    }
     return *this;
   }
 
-  [[nodiscard]] const T& get() const noexcept {
+  [[nodiscard]] auto get() const noexcept -> T const& {
     return *data_;
   }
 
-  void mutate(std::invocable<T&> auto&& func) {
+  auto mutate(std::invocable<T&> auto&& func) {
     make_unique();
     std::invoke(std::forward<decltype(func)>(func), *data_);
   }
 
-  [[nodiscard]] const T& operator*() const noexcept {
+  [[nodiscard]] auto operator*() const noexcept -> T const& {
     return get();
   }
-  [[nodiscard]] const T* operator->() const noexcept {
+
+  [[nodiscard]] auto operator->() const noexcept -> T const* {
     return data_.get();
   }
 
-  [[nodiscard]] operator const T&() const noexcept {
-    return get();
-  }
-
-  [[nodiscard]] bool is_unique() const noexcept {
+  [[nodiscard]] auto is_unique() const noexcept -> bool {
     return data_.use_count() == 1;
   }
 
-  [[nodiscard]] Cow clone() const {
+  [[nodiscard]] auto clone() const -> Cow {
     return Cow(*data_);
   }
 
-  void swap(Cow& other) noexcept {
-    data_.swap(other.data_);
+  auto swap(Cow& other) noexcept {
+    std::swap(data_, other.data_);
   }
 
-  [[nodiscard]] std::shared_ptr<T> release() && {
+  [[nodiscard]] auto release() && -> std::shared_ptr<T> {
     return std::move(data_);
   }
 
 private:
-  void make_unique() {
+  auto make_unique() {
     if (data_.use_count() > 1) {
       data_ = std::make_shared<T>(*data_);
     }
