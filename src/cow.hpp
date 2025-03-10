@@ -20,10 +20,12 @@ public:
       : data_(std::make_shared<T>(std::move(value))) {}
 
   Cow(Cow const& other) = default;
-  Cow(Cow&& other) noexcept = default;
+
+  Cow(Cow&& other) noexcept = delete;
 
   auto operator=(Cow const& other) -> Cow& = default;
-  auto operator=(Cow&& other) noexcept -> Cow& = default;
+
+  auto operator=(Cow&& other) noexcept -> Cow& = delete;
 
   auto operator=(T const& value) -> Cow& {
     data_ = std::make_shared<T>(value);
