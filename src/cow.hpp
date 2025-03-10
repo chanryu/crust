@@ -13,29 +13,27 @@ public:
     requires std::default_initializable<T>
       : data_(std::make_shared<T>()) {}
 
-  Cow(T const& value)
-    requires std::copy_constructible<T>
-      : data_(std::make_shared<T>(value)) {}
+  Cow(T const& value) : data_(std::make_shared<T>(value)) {}
 
   Cow(T&& value)
     requires std::move_constructible<T>
       : data_(std::make_shared<T>(std::move(value))) {}
 
-  auto operator=(T const& value) -> Cow&
-    requires std::copy_constructible<T>
-  {
-    if (this != &value) {
-      data_ = std::make_shared<T>(value);
-    }
+  Cow(Cow const& other) = default;
+  Cow(Cow&& other) noexcept = default;
+
+  auto operator=(Cow const& other) -> Cow& = default;
+  auto operator=(Cow&& other) noexcept -> Cow& = default;
+
+  auto operator=(T const& value) -> Cow& {
+    data_ = std::make_shared<T>(value);
     return *this;
   }
 
   auto operator=(T&& value) -> Cow&
     requires std::move_constructible<T>
   {
-    if (this != &value) {
-      data_ = std::make_shared<T>(std::move(value));
-    }
+    data_ = std::make_shared<T>(std::move(value));
     return *this;
   }
 
@@ -43,9 +41,10 @@ public:
     return *data_;
   }
 
-  auto mutate(std::invocable<T&> auto&& func) {
+  template <typename F>
+  auto mutate(F&& func) -> std::invoke_result_t<F, T&> {
     make_unique();
-    std::invoke(std::forward<decltype(func)>(func), *data_);
+    return std::invoke(std::forward<F>(func), *data_);
   }
 
   [[nodiscard]] auto operator*() const noexcept -> T const& {
@@ -64,22 +63,37 @@ public:
     return Cow(*data_);
   }
 
-  auto swap(Cow& other) noexcept {
-    std::swap(data_, other.data_);
+  friend auto operator==(Cow const& lhs, Cow const& rhs) -> bool
+    requires std::equality_comparable<T>
+  {
+    return *lhs.data_ == *rhs.data_;
   }
 
-  [[nodiscard]] auto release() && -> std::shared_ptr<T> {
-    return std::move(data_);
+  friend auto operator==(Cow const& lhs, T const& rhs) -> bool
+    requires std::equality_comparable<T>
+  {
+    return *lhs.data_ == rhs;
+  }
+
+  friend auto operator==(T const& lhs, Cow const& rhs) -> bool
+    requires std::equality_comparable<T>
+  {
+    return lhs == *rhs.data_;
   }
 
 private:
-  auto make_unique() {
-    if (data_.use_count() > 1) {
+  auto make_unique() -> void {
+    if (!is_unique()) {
       data_ = std::make_shared<T>(*data_);
     }
   }
 
   std::shared_ptr<T> data_;
 };
+
+template <typename T, typename... Args>
+auto make_cow(Args&&... args) -> Cow<T> {
+  return Cow<T>(T{std::forward<Args>(args)...});
+}
 
 } // namespace crust
