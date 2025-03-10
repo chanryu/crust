@@ -1,4 +1,3 @@
-#include <functional>
 #include <gtest/gtest.h>
 
 #include "cow.hpp"
