@@ -100,13 +100,13 @@ TEST(CowTest, Equality) {
   auto cow2 = Cow<int>{42};
   auto cow3 = Cow<int>{100};
 
-  EXPECT_TRUE(cow1 == cow2);
-  EXPECT_FALSE(cow1 == cow3);
+  EXPECT_EQ(cow1, cow2);
+  EXPECT_NE(cow1, cow3);
 }
 
 TEST(CowTest, MakeCow) {
   auto cow = make_cow<std::string>("Hello, World!");
-  EXPECT_EQ(cow.get(), "Hello, World!");
+  EXPECT_EQ(cow, "Hello, World!");
 }
 
 } // namespace
