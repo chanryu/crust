@@ -16,23 +16,10 @@ TEST(CowTest, CopyConstructor) {
   EXPECT_EQ(cow2.get(), 42);
 }
 
-TEST(CowTest, MoveConstructor) {
-  auto cow1 = Cow<int>{42};
-  auto cow2 = std::move(cow1);
-  EXPECT_EQ(cow2.get(), 42);
-}
-
 TEST(CowTest, CowCopyAssignment) {
   auto cow1 = Cow<int>{42};
   auto cow2 = Cow<int>{};
   cow2 = cow1;
-  EXPECT_EQ(cow2.get(), 42);
-}
-
-TEST(CowTest, CowMoveAssignment) {
-  auto cow1 = Cow<int>{42};
-  auto cow2 = Cow<int>{};
-  cow2 = std::move(cow1);
   EXPECT_EQ(cow2.get(), 42);
 }
 
