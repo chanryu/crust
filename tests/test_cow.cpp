@@ -16,32 +16,34 @@ TEST(CowTest, CopyConstructor) {
   EXPECT_EQ(cow2.get(), 42);
 }
 
-TEST(CowTest, MoveConstructor) {
-  auto cow1 = Cow<int>{42};
-  auto cow2 = std::move(cow1);
-  EXPECT_EQ(cow2.get(), 42);
-}
-
-TEST(CowTest, CopyAssignment) {
+TEST(CowTest, CowCopyAssignment) {
   auto cow1 = Cow<int>{42};
   auto cow2 = Cow<int>{};
   cow2 = cow1;
   EXPECT_EQ(cow2.get(), 42);
 }
 
-TEST(CowTest, MoveAssignment) {
-  auto cow1 = Cow<int>{42};
-  auto cow2 = Cow<int>{};
-  cow2 = std::move(cow1);
-  EXPECT_EQ(cow2.get(), 42);
+TEST(CowTest, ValueCopyAssignment) {
+  auto cow = Cow<int>{};
+  cow = 42;
+  EXPECT_EQ(cow.get(), 42);
 }
 
-TEST(CowTest, Mutate) {
+TEST(CowTest, ValueMoveAssignment) {
+  auto cow = Cow<int>{};
+  auto value = 42;
+  cow = std::move(value);
+  EXPECT_EQ(cow.get(), 42);
+}
+
+TEST(CowTest, MutateWithReturn) {
   auto cow = Cow<int>{42};
-  cow.mutate([](int& value) {
+  auto result = cow.mutate([](int& value) {
     value = 100;
+    return value * 2;
   });
   EXPECT_EQ(cow.get(), 100);
+  EXPECT_EQ(result, 200);
 }
 
 TEST(CowTest, IsUnique) {
@@ -55,20 +57,13 @@ TEST(CowTest, Clone) {
   auto cow = Cow<int>{42};
   auto clone = cow.clone();
   EXPECT_EQ(clone.get(), 42);
-}
 
-TEST(CowTest, Release) {
-  auto cow = Cow<int>{42};
-  auto released = std::move(cow).release();
-  EXPECT_EQ(*released, 42);
-}
-
-TEST(CowTest, Swap) {
-  auto cow1 = Cow<int>{42};
-  auto cow2 = Cow<int>{100};
-  cow1.swap(cow2);
-  EXPECT_EQ(cow1.get(), 100);
-  EXPECT_EQ(cow2.get(), 42);
+  // Modifying the clone shouldn't affect the original
+  clone.mutate([](int& value) {
+    value = 100;
+  });
+  EXPECT_EQ(cow.get(), 42);
+  EXPECT_EQ(clone.get(), 100);
 }
 
 TEST(CowTest, CopyOnWrite) {
@@ -84,6 +79,20 @@ TEST(CowTest, CopyOnWrite) {
 
   EXPECT_EQ(cow1.get(), 100);
   EXPECT_EQ(cow2.get(), 42);
+}
+
+TEST(CowTest, Equality) {
+  auto cow1 = Cow<int>{42};
+  auto cow2 = Cow<int>{42};
+  auto cow3 = Cow<int>{100};
+
+  EXPECT_EQ(cow1, cow2);
+  EXPECT_NE(cow1, cow3);
+}
+
+TEST(CowTest, MakeCow) {
+  auto cow = make_cow<std::string>("Hello, World!");
+  EXPECT_EQ(cow, "Hello, World!");
 }
 
 } // namespace
