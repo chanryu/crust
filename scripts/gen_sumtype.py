@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-Generate one Rust-like sum type in C++ (std::variant wrapper + named cases)
-from a single-enum JSON specification.
+Generate a Rust-like sum type in C++ (std::variant wrapper with named cases)
+from a JSON specification.
 
-Shorthand JSON supported:
+Supported JSON format:
 - cases:
- - "Quit"
- - {"Move": [["x","int"], ["y","int"]]}
+  - "Quit"  # Unit case
+  - {"Move": [["x","int"], ["y","int"]]}  # Case with fields
 - fields:
- - ["x","int"]
- - ["x","int","42"]  # default (raw C++)
+  - ["x","int"]  # Name and type
+  - ["x","int","42"]  # With default value (raw C++)
 
 Features:
 - constexpr constructors for case structs and wrapper type
-- hides <EnumName>Tags inside namespace detail (within the target namespace if provided)
-- JSON Schema included and validated *after normalization*
- (uses jsonschema if installed; otherwise strict manual validation)
+- Case structs include a Variant typedef for match() compatibility
+- Hides <EnumName>Tags inside namespace detail (within the target namespace if provided)
+- JSON Schema included and validated after normalization
+  (uses jsonschema if installed; otherwise strict manual validation)
 
-This generator emits ONLY the sum type. Keep your generic match wrapper in a shared header.
+This generator emits ONLY the sum type. Use the crust::match() wrapper for pattern matching.
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-# Normalized schema (post-shorthand expansion)
+# Normalized schema
 SCHEMA_NORMALIZED: Dict[str, Any] = {
    "$schema": "https://json-schema.org/draft/2020-12/schema",
    "$id": "https://example.local/sumtype.normalized.schema.json",
@@ -84,7 +85,7 @@ def cpp_ident(name: str) -> str:
 
 
 # ----------------------------
-# Shorthand normalization
+# JSON normalization
 # ----------------------------
 
 def normalize_field(field: Any, ctx: str) -> Dict[str, Any]:
@@ -115,7 +116,7 @@ def normalize_case(case: Any, idx: int) -> Dict[str, Any]:
        return {"name": case}
 
    if isinstance(case, dict):
-       # Single-key shorthand: {"Move": [...]}
+       # Case with fields: {"Move": [...]}
        if len(case) == 1:
            (k, v), = case.items()
            out = {"name": k}
@@ -128,7 +129,7 @@ def normalize_case(case: Any, idx: int) -> Dict[str, Any]:
            return out
 
        raise ValueError(
-           f"{ctx}: case object must be single-key shorthand {{'Case':[...]}}"
+           f"{ctx}: case object must be {{'Case':[...]}}"
        )
 
    raise ValueError(f"{ctx}: invalid case form (expected string or object)")
@@ -156,7 +157,7 @@ def normalize_spec(raw: Any) -> Dict[str, Any]:
 
 
 # ----------------------------
-# Validation (normalized)
+# Validation
 # ----------------------------
 
 def validate_with_jsonschema(spec_norm: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
