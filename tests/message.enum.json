@@ -1,5 +1,5 @@
 {
-    "namespace": "crust",
+    "namespace": "crust::test",
     "includes": [
         "<string>"
     ],

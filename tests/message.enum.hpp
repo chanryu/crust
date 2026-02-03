@@ -6,7 +6,7 @@
 #include <utility>
 #include <variant>
 
-namespace crust {
+namespace crust::test {
 
 struct Message;
 
@@ -58,4 +58,4 @@ struct Message : std::variant<detail::MessageTags::Quit, detail::MessageTags::Mo
     constexpr Message(Write v) : Base(std::move(v)) {}
 };
 
-} // namespace crust
+} // namespace crust::test

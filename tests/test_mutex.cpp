@@ -5,11 +5,11 @@
 
 #include <gtest/gtest.h>
 
-#include "mutex.hpp"
+#include <crust/mutex.hpp>
 
 using namespace std::chrono_literals;
 
-namespace crust {
+namespace crust::test {
 namespace {
 
 // Test fixture for Mutex tests

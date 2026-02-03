@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "match.hpp"
+#include <crust/match.hpp>
 #include "message.enum.hpp"
 
-namespace crust {
+namespace crust::test {
 namespace {
 
 TEST(MatchTest, match_variant) {

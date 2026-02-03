@@ -5,11 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_library(crust INTERFACE
-  src/cow.hpp
-  src/match.hpp
-  src/mutex.hpp
-)
+add_library(crust INTERFACE)
 target_include_directories(crust INTERFACE src/)
 
 enable_testing()
@@ -26,6 +22,6 @@ FetchContent_MakeAvailable(googletest)
 # Define test executable
 file(GLOB TEST_SOURCES "tests/*.cpp")
 add_executable(tests ${TEST_SOURCES})
-target_link_libraries(tests gtest gtest_main crust)
+target_link_libraries(tests gtest_main crust)
 
 add_test(NAME tests COMMAND tests)
