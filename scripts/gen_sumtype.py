@@ -7,11 +7,9 @@ Shorthand JSON supported:
 - cases:
  - "Quit"
  - {"Move": [["x","int"], ["y","int"]]}
- - {"name":"Move","fields":[{"name":"x","type":"int"}]}
 - fields:
  - ["x","int"]
  - ["x","int","42"]  # default (raw C++)
- - {"name":"x","type":"int","default":"42"}
 
 Features:
 - constexpr constructors for case structs and wrapper type
@@ -94,14 +92,6 @@ def normalize_field(field: Any, ctx: str) -> Dict[str, Any]:
    Return normalized field object:
      {"name": <str>, "type": <str>, "default": <optional str>}
    """
-   if isinstance(field, dict):
-       if "name" not in field or "type" not in field:
-           raise ValueError(f"{ctx}: field object must have 'name' and 'type'")
-       out: Dict[str, Any] = {"name": field["name"], "type": field["type"]}
-       if "default" in field:
-           out["default"] = field["default"]
-       return out
-
    if isinstance(field, list):
        if len(field) not in (2, 3):
            raise ValueError(f"{ctx}: field array must be [name,type] or [name,type,default]")
@@ -110,7 +100,7 @@ def normalize_field(field: Any, ctx: str) -> Dict[str, Any]:
            out["default"] = field[2]
        return out
 
-   raise ValueError(f"{ctx}: invalid field form (expected object or array)")
+   raise ValueError(f"{ctx}: invalid field form (expected array)")
 
 
 def normalize_case(case: Any, idx: int) -> Dict[str, Any]:
@@ -125,18 +115,6 @@ def normalize_case(case: Any, idx: int) -> Dict[str, Any]:
        return {"name": case}
 
    if isinstance(case, dict):
-       # Verbose: {"name":"Move","fields":[...]}
-       if "name" in case:
-           out: Dict[str, Any] = {"name": case["name"]}
-           fields = case.get("fields", [])
-           if fields is None:
-               fields = []
-           if not isinstance(fields, list):
-               raise ValueError(f"{ctx}: 'fields' must be a list")
-           if fields:
-               out["fields"] = [normalize_field(f, f"{ctx}.fields") for f in fields]
-           return out
-
        # Single-key shorthand: {"Move": [...]}
        if len(case) == 1:
            (k, v), = case.items()
@@ -150,7 +128,7 @@ def normalize_case(case: Any, idx: int) -> Dict[str, Any]:
            return out
 
        raise ValueError(
-           f"{ctx}: case object must be either {{'name':...}} or single-key shorthand {{'Case':[...]}}"
+           f"{ctx}: case object must be single-key shorthand {{'Case':[...]}}"
        )
 
    raise ValueError(f"{ctx}: invalid case form (expected string or object)")
@@ -307,13 +285,14 @@ def tags_qualified(enum_name: str) -> str:
    return f"detail::{tags_name(enum_name)}"
 
 
-def emit_case(case: Dict[str, Any], indent: str) -> str:
+def emit_case(case: Dict[str, Any], enum_name: str, indent: str) -> str:
    cname = cpp_ident(case["name"])
    fields = case.get("fields", [])
    if fields is None:
        fields = []
 
    lines: List[str] = [f"{indent}struct {cname} {{"]
+   lines.append(f"{indent}    using Variant = {enum_name};")
 
    if fields:
        for f in fields:
@@ -335,7 +314,7 @@ def emit_tags(enum_name: str, cases: List[Dict[str, Any]]) -> str:
    lines.append("namespace detail {")
    lines.append(f"struct {tags} {{")
    for i, c in enumerate(cases):
-       lines.append(emit_case(c, "    "))
+       lines.append(emit_case(c, enum_name, "    "))
        if i != len(cases) - 1:
            lines.append("")
    lines.append("};")
@@ -395,6 +374,9 @@ def generate_cpp(spec_norm: Dict[str, Any]) -> str:
    if ns:
        out.append(f"namespace {ns} {{")
        out.append("")
+
+   out.append(f"struct {enum_name};")
+   out.append("")
 
    out.append(emit_tags(enum_name, cases))
    out.append("")
