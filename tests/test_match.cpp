@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "message.enum.hpp"
 #include <crust/match.hpp>
+
+#include "message.enum.hpp"
 
 namespace crust::test {
 namespace {
