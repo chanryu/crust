@@ -1,3 +1,10 @@
 {
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json"
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "chat.tools.terminal.autoApprove": {
+        "ninja": true,
+        "/^python3 scripts/gen_sumtype\\.py tests/message\\.enum\\.json -o build/src/generated/message\\.enum\\.hpp && ls -la build/src/generated \\|\\| true$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
 }

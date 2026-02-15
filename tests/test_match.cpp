@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <crust/match.hpp>
 #include "message.enum.hpp"
+#include <crust/match.hpp>
 
 namespace crust::test {
 namespace {
@@ -45,4 +45,4 @@ TEST(MatchTest, match_case) {
 
 } // namespace
 
-} // namespace crust
+} // namespace crust::test

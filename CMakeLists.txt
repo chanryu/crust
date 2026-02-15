@@ -19,7 +19,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# Define test executable
+# Define test executable (no generated-header dependencies)
 file(GLOB TEST_SOURCES "tests/*.cpp")
 add_executable(tests ${TEST_SOURCES})
 target_link_libraries(tests gtest_main crust)
