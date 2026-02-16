@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(crust INTERFACE)
-target_include_directories(crust INTERFACE src/)
+target_include_directories(crust INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
 enable_testing()
 
