@@ -1,6 +1,5 @@
-#include <gtest/gtest.h>
-
 #include <crust/match.hpp>
+#include <gtest/gtest.h>
 
 #include "message.enum.hpp"
 

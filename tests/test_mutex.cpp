@@ -3,9 +3,8 @@
 #include <thread>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include <crust/mutex.hpp>
+#include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
 
@@ -329,4 +328,4 @@ TEST_F(MutexTest, DeadlockPrevention) {
 }
 
 } // namespace
-} // namespace crust
+} // namespace crust::test

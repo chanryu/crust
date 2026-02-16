@@ -1,3 +1,8 @@
 {
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/.build/compile_commands.json"
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/.build/compile_commands.json",
+    "clangd.arguments": [
+        "--background-index",
+        "--compile-commands-dir=${workspaceFolder}/.build/"
+    ],
+    "editor.formatOnSave": true
 }

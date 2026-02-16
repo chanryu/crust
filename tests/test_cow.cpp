@@ -1,6 +1,5 @@
-#include <gtest/gtest.h>
-
 #include <crust/cow.hpp>
+#include <gtest/gtest.h>
 
 namespace crust::test {
 namespace {
@@ -97,4 +96,4 @@ TEST(CowTest, MakeCow) {
 
 } // namespace
 
-} // namespace crust
+} // namespace crust::test
