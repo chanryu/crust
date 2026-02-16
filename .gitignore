@@ -1,2 +1,3 @@
 .cache/
-build/
+.build/
+tests/*.enum.hpp

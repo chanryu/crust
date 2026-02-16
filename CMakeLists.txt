@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(crust INTERFACE)
-target_include_directories(crust INTERFACE src/)
+target_include_directories(crust INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
 enable_testing()
 
@@ -19,9 +22,40 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+# Find Python interpreter for code generation
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+# Generate sumtype headers from *.enum.json specs
+# Output directory: tests/ (where specs live)
+set(ENUM_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/tests")
+file(GLOB ENUM_SPECS "${CMAKE_SOURCE_DIR}/tests/*.enum.json")
+set(ENUM_HEADERS "")
+foreach(spec ${ENUM_SPECS})
+  string(REGEX REPLACE "\\.enum\\.json$" ".enum.hpp" header "${spec}")
+  list(APPEND ENUM_HEADERS "${header}")
+  
+  add_custom_command(
+    OUTPUT "${header}"
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_SOURCE_DIR}/tools/gen_sumtype.py"
+            "${spec}"
+            "${header}"
+    DEPENDS "${spec}"
+    COMMENT "Generating ${header}"
+    VERBATIM
+  )
+endforeach()
+
+# Custom target to generate all enum headers (not built by default)
+add_custom_target(gen_enum DEPENDS ${ENUM_HEADERS})
+
 # Define test executable
 file(GLOB TEST_SOURCES "tests/*.cpp")
 add_executable(tests ${TEST_SOURCES})
-target_link_libraries(tests gtest gtest_main crust)
+target_link_libraries(tests gtest_main crust)
+
+# Make tests depend on the generated headers
+add_dependencies(tests gen_enum)
+target_include_directories(tests PRIVATE "${ENUM_OUTPUT_DIR}")
 
 add_test(NAME tests COMMAND tests)

@@ -1,0 +1,30 @@
+{
+    "namespace": "crust::test",
+    "includes": [
+        "<string>"
+    ],
+    "name": "Message",
+    "cases": [
+        "Quit",
+        {
+            "Move": [
+                [
+                    "x",
+                    "int"
+                ],
+                [
+                    "y",
+                    "int"
+                ]
+            ]
+        },
+        {
+            "Write": [
+                [
+                    "text",
+                    "std::string"
+                ]
+            ]
+        }
+    ]
+}
